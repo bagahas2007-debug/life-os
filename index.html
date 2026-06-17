@@ -218,6 +218,44 @@
   #modal h3{font-size:22px;font-weight:800;margin-bottom:6px}
   #modal p{color:var(--muted);margin-bottom:18px}
 
+  /* calendar */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .cal-title{font-weight:800;font-size:17px;text-transform:capitalize}
+  .cal-nav{width:38px;height:38px;border-radius:10px;background:var(--panel2);border:1px solid var(--border2);
+    color:var(--txt);font-size:20px;cursor:pointer;transition:.15s}
+  .cal-nav:hover{border-color:var(--violet)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cal-wd{text-align:center;font-size:11px;color:var(--muted);padding-bottom:2px}
+  .cal-day{aspect-ratio:1;border-radius:10px;background:var(--panel);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:600;
+    position:relative;transition:.15s}
+  .cal-day:hover{border-color:var(--border2)}
+  .cal-day.blank{background:transparent;border:none;cursor:default}
+  .cal-day.past{opacity:.45}
+  .cal-day.today{border-color:var(--indigo);color:#fff}
+  .cal-day.sel{background:rgba(109,108,246,.22);border-color:var(--violet)}
+  .cal-day .dot{position:absolute;bottom:6px;width:5px;height:5px;border-radius:99px;background:var(--cyan)}
+  .ev{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;background:var(--panel);
+    border:1px solid var(--border);margin-bottom:7px}
+  .ev-time{font-weight:800;color:var(--cyan);min-width:48px;font-variant-numeric:tabular-nums;font-size:14px}
+  .ev-body{flex:1;min-width:0}
+  .ev-title{font-weight:600}
+  .ev-note{font-size:12px;color:var(--muted)}
+  .ev-del,.rem-del{color:var(--faint);cursor:pointer;font-size:20px;padding:0 4px;line-height:1}
+  .ev-del:hover,.rem-del:hover{color:var(--red)}
+  .ev-form{margin-top:14px;border-top:1px solid var(--border);padding-top:14px}
+  .ev-form .row{display:flex;gap:8px}
+  .ev-form input[type=time]{max-width:130px}
+  .rem-add{display:flex;gap:8px}
+  .rem-add input{flex:1}
+  .rem{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;background:var(--panel);
+    border:1px solid var(--border);margin-bottom:7px;cursor:pointer;transition:.15s;user-select:none}
+  .rem:hover{border-color:var(--border2)}
+  .rem.done{opacity:.5}
+  .rem.done .rem-txt{text-decoration:line-through}
+  .rem .cb{width:21px;height:21px}
+  .rem-txt{flex:1}
+
   @media(max-width:860px){
     .app{flex-direction:column}
     .sidebar{width:100%;height:auto;position:sticky;top:0;z-index:40;flex-direction:row;align-items:center;
@@ -340,6 +378,33 @@
       <div class="panel"><div class="bars" id="weeklyBars"></div></div>
     </section>
 
+    <!-- PLAN (Дела: календарь + напоминания) -->
+    <section class="view" data-view="plan">
+      <div class="sec-head"><h2 class="title">Ближайшие дела</h2></div>
+      <div class="panel" id="planUpcoming"></div>
+
+      <div class="sec-head"><h2 class="title">Календарь</h2></div>
+      <div class="panel">
+        <div class="cal-head">
+          <button class="cal-nav" id="calPrev">‹</button>
+          <div class="cal-title" id="calTitle">—</div>
+          <button class="cal-nav" id="calNext">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+
+      <div class="panel" id="dayPanel" style="margin-top:14px"></div>
+
+      <div class="sec-head"><h2 class="title">🔔 Напоминания (без срока)</h2></div>
+      <div class="panel">
+        <div class="rem-add">
+          <input class="txt" id="remInput" placeholder="Что нужно сделать когда-нибудь...">
+          <button class="pill primary" id="remAdd">Добавить</button>
+        </div>
+        <div id="remList" style="margin-top:12px"></div>
+      </div>
+    </section>
+
     <!-- DATA -->
     <section class="view" data-view="data">
       <div class="panel" style="font-size:13px;color:var(--muted)">
@@ -411,6 +476,7 @@ const DEFAULT_TOPICS = {
 const NAV = [
   { id:'dashboard', label:'Дашборд',   icon:'grid' },
   { id:'missions',  label:'Миссии',    icon:'check' },
+  { id:'plan',      label:'Дела',      icon:'clip' },
   { id:'exams',     label:'Экзамены',  icon:'calendar' },
   { id:'training',  label:'Тренировки',icon:'activity' },
   { id:'diary',     label:'Дневник',   icon:'book' },
@@ -430,6 +496,7 @@ const ICONS = {
   trophy:'<path d="M6 9a6 6 0 0 0 12 0V3H6z"/><path d="M6 5H3v2a3 3 0 0 0 3 3"/><path d="M18 5h3v2a3 3 0 0 1-3 3"/><line x1="12" y1="15" x2="12" y2="20"/><line x1="8" y1="21" x2="16" y2="21"/>',
   star:'<polygon points="12 2 15 9 22 9.5 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.5 9 9"/>',
   sync:'<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  clip:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="9" y="2" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>',
 };
 function svg(name,cls){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="'+(cls||'')+'">'+ICONS[name]+'</svg>';}
 
@@ -440,6 +507,8 @@ function persist(){localStorage.setItem(KEY,JSON.stringify(S));}
 let S=load();
 S.byDate=S.byDate||{};
 S.topics=S.topics||{};
+S.events=S.events||[];
+S.reminders=S.reminders||[];
 if(!S.topics.math) S.topics.math=DEFAULT_TOPICS.math.map(t=>({t,done:false}));
 if(!S.topics.buh)  S.topics.buh =DEFAULT_TOPICS.buh.map(t=>({t,done:false}));
 S.lastLevel=S.lastLevel||1;
@@ -642,6 +711,71 @@ function checkLevelUp(){const L=levelInfo();if(L.lvl>S.lastLevel){S.lastLevel=L.
   document.getElementById('mText').textContent='Ты набрал '+L.p+' очков. Дисциплина превращается в результат — продолжай.';
   document.getElementById('modal').style.display='flex';}else if(L.lvl<S.lastLevel){S.lastLevel=L.lvl;persist();}}
 
+// ============ ДЕЛА: КАЛЕНДАРЬ + НАПОМИНАНИЯ ============
+let calY,calM,selDay;
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmtShort(k){const[y,m,d]=k.split('-');const mo=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'][+m-1];return (+d)+' '+mo;}
+function eventsByDay(){const m={};(S.events||[]).forEach(e=>{(m[e.date]=m[e.date]||[]).push(e);});return m;}
+function renderPlan(){
+  if(calY===undefined){const n=new Date();calY=n.getFullYear();calM=n.getMonth();selDay=TK;}
+  renderUpcoming();renderCalGrid();renderDayPanel();renderReminders();
+  document.getElementById('calPrev').onclick=()=>{if(--calM<0){calM=11;calY--;}renderCalGrid();};
+  document.getElementById('calNext').onclick=()=>{if(++calM>11){calM=0;calY++;}renderCalGrid();};
+  document.getElementById('remAdd').onclick=addRem;
+  document.getElementById('remInput').onkeydown=(e)=>{if(e.key==='Enter')addRem();};
+}
+function renderUpcoming(){
+  const up=(S.events||[]).filter(e=>e.date>=TK).sort((a,b)=>(a.date+(a.time||'99')).localeCompare(b.date+(b.time||'99'))).slice(0,6);
+  const el=document.getElementById('planUpcoming');
+  if(!up.length){el.innerHTML='<div class="empty-note">Запланированных дел нет. Открой день в календаре и добавь.</div>';return;}
+  el.innerHTML=up.map(e=>'<div class="ev"><div class="ev-time" style="min-width:74px;font-size:12px">'+fmtShort(e.date)+(e.time?' '+e.time:'')+'</div><div class="ev-body"><div class="ev-title">'+esc(e.title)+'</div></div></div>').join('');
+}
+function renderCalGrid(){
+  const MONTHS=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  document.getElementById('calTitle').textContent=MONTHS[calM]+' '+calY;
+  const grid=document.getElementById('calGrid');grid.innerHTML='';
+  CONFIG.weekdays.forEach(w=>{const d=document.createElement('div');d.className='cal-wd';d.textContent=w;grid.appendChild(d);});
+  const off=(new Date(calY,calM,1).getDay()+6)%7;
+  const dim=new Date(calY,calM+1,0).getDate();
+  const evMap=eventsByDay();
+  for(let i=0;i<off;i++){const b=document.createElement('div');b.className='cal-day blank';grid.appendChild(b);}
+  for(let d=1;d<=dim;d++){
+    const key=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const cell=document.createElement('div');
+    cell.className='cal-day'+(key===TK?' today':'')+(key===selDay?' sel':'')+(key<TK?' past':'');
+    cell.innerHTML=d+(evMap[key]?'<span class="dot"></span>':'');
+    cell.onclick=()=>{selDay=key;renderCalGrid();renderDayPanel();};
+    grid.appendChild(cell);
+  }
+}
+function renderDayPanel(){
+  const p=document.getElementById('dayPanel');
+  const evs=(S.events||[]).filter(e=>e.date===selDay).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+  let h='<h2 class="title">Дела на '+fmtDate(selDay)+'</h2>';
+  h+=evs.length?evs.map(e=>'<div class="ev"><div class="ev-time">'+(e.time||'—')+'</div><div class="ev-body"><div class="ev-title">'+esc(e.title)+'</div>'+(e.note?'<div class="ev-note">'+esc(e.note)+'</div>':'')+'</div><div class="ev-del" data-id="'+e.id+'">×</div></div>').join(''):'<div class="empty-note">На этот день дел нет. Добавь ниже.</div>';
+  h+='<div class="ev-form"><div class="row"><input type="time" id="evTime" class="txt"><input type="text" id="evTitle" class="txt" placeholder="Название дела"></div><input type="text" id="evNote" class="txt" placeholder="Заметка (необязательно)" style="margin-top:8px"><button class="pill primary" id="evAdd" style="margin-top:10px">+ Добавить дело</button></div>';
+  p.innerHTML=h;
+  p.querySelectorAll('.ev-del').forEach(b=>b.onclick=()=>{S.events=S.events.filter(x=>x.id!==b.dataset.id);persist();renderPlan();});
+  document.getElementById('evAdd').onclick=()=>{const t=document.getElementById('evTitle').value.trim();
+    if(!t){toast('Впиши название дела');return;}
+    S.events.push({id:uid(),date:selDay,time:document.getElementById('evTime').value||'',title:t,note:document.getElementById('evNote').value.trim()});
+    persist();toast('✅ Дело добавлено');renderPlan();};
+}
+function renderReminders(){
+  const el=document.getElementById('remList');
+  const rs=(S.reminders||[]).slice().sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+  if(!rs.length){el.innerHTML='<div class="empty-note">Список пуст. Добавь то, что нужно сделать когда-нибудь.</div>';return;}
+  el.innerHTML='';
+  rs.forEach(r=>{const d=document.createElement('div');d.className='rem'+(r.done?' done':'');
+    d.innerHTML='<div class="cb">'+svg('check')+'</div><div class="rem-txt">'+esc(r.text)+'</div><div class="rem-del">×</div>';
+    const tog=()=>{r.done=!r.done;persist();renderReminders();};
+    d.querySelector('.cb').onclick=tog;d.querySelector('.rem-txt').onclick=tog;
+    d.querySelector('.rem-del').onclick=(ev)=>{ev.stopPropagation();S.reminders=S.reminders.filter(x=>x.id!==r.id);persist();renderReminders();};
+    el.appendChild(d);});
+}
+function addRem(){const i=document.getElementById('remInput');const t=i.value.trim();if(!t)return;
+  S.reminders.push({id:uid(),text:t,done:false});i.value='';persist();renderReminders();toast('🔔 Добавлено');}
+
 // ============ ДАННЫЕ: ЭКСПОРТ / ИМПОРТ ============
 function exportCode(){return btoa(unescape(encodeURIComponent(JSON.stringify(S))));}
 function parseCode(str){str=(str||'').trim();if(!str)return null;
@@ -653,6 +787,8 @@ function mergeState(inc){
     if(b.diary){['good','win','improve'].forEach(f=>{if((b.diary[f]||'').length>((a.diary[f]||'')).length)a.diary[f]=b.diary[f];});}}
   for(const ex in (inc.topics||{})){if(!S.topics[ex])S.topics[ex]=[];
     inc.topics[ex].forEach(t=>{const e=S.topics[ex].find(x=>x.t===t.t);if(e)e.done=e.done||t.done;else S.topics[ex].push({t:t.t,done:!!t.done});});}
+  if(inc.events){S.events=S.events||[];inc.events.forEach(e=>{if(!S.events.some(x=>x.id===e.id))S.events.push(e);});}
+  if(inc.reminders){S.reminders=S.reminders||[];inc.reminders.forEach(r=>{const ex=S.reminders.find(x=>x.id===r.id);if(ex)ex.done=ex.done||r.done;else S.reminders.push(r);});}
   S.lastLevel=Math.max(S.lastLevel||1,inc.lastLevel||1);persist();}
 function renderData(){const box=document.getElementById('exportBox');box.value=exportCode();
   document.getElementById('btnCopy').onclick=()=>{const code=box.value;
@@ -676,7 +812,7 @@ function renderData(){const box=document.getElementById('exportBox');box.value=e
 
 // ============ НАВИГАЦИЯ ============
 let current='dashboard';
-const RENDER={dashboard:renderDashboard,missions:renderMissions,exams:renderExams,training:renderTraining,diary:renderDiary,antipro:renderAntipro,weekly:renderWeekly,data:renderData};
+const RENDER={dashboard:renderDashboard,missions:renderMissions,plan:renderPlan,exams:renderExams,training:renderTraining,diary:renderDiary,antipro:renderAntipro,weekly:renderWeekly,data:renderData};
 function go(view){current=view;
   document.querySelectorAll('section.view').forEach(s=>s.classList.toggle('active',s.dataset.view===view));
   renderNav();(RENDER[view]||function(){})();window.scrollTo({top:0,behavior:'smooth'});}
